@@ -1,0 +1,5 @@
+**/*.err
+**/*.out
+**/*.o
+ECAL_Analysis_LCIO/bin/*
+ECAL_Analysis_LCIO/share/20201216_20210308_InterCalib.root

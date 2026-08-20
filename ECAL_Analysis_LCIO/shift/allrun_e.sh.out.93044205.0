@@ -1,0 +1,9 @@
+execute all run file...
+ ******* NOW particledir is e+ *******
+____________ NOW energydir is 20GeV ____________
+ ====== NOW file is ECAL_Run225_20221028_020213.dat ======
+ modifying the global_config ...
+ ====== NOW ECAL_Run225_20221028_020213.dat finished =====
+ ====== NOW file is ECAL_Run226_20221028_030024.dat ======
+ modifying the global_config ...
+ ====== NOW ECAL_Run226_20221028_030024.dat finished =====

@@ -102,7 +102,7 @@ then
 
                 echo "strip splitting ${prefix}"
                 echo " ... ... "
-                ${bin_dir}/ssa ${file_name} "${calib_o}/" "${stripsplit_o}/"
+                sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/ssa ${file_name} "${calib_o}/" "${stripsplit_o}/"
                 echo "    Output dir ===> ${stripsplit_o}/${prefix}.root "
 
                 echo "=============================="
@@ -140,7 +140,7 @@ then
 
                 echo "strip splitting ${prefix}"
                 echo " ... ... "
-                ${bin_dir}/ssa ${file_name} "${calib_ou}/" "${stripsplit_ou}/"
+                sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/ssa ${file_name} "${calib_ou}/" "${stripsplit_ou}/"
                 echo "    Output dir ===> ${stripsplit_ou}/${prefix}.root "
 
                 echo "=============================="

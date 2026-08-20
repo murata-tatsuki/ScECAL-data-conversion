@@ -43,6 +43,7 @@ void trackFit::Clear()
     _hitPosYnew_out.clear();
     _hitPosZnew_out.clear();
     _layer_efficiency.clear();
+    _temp.clear();
     _temp_new.clear();
     _trackTag.clear();
 

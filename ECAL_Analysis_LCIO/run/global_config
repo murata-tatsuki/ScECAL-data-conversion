@@ -14,20 +14,20 @@ factor_dir="${work_dir}/share"
 #date_tag=LEDCalib/20221031_2214_Calib
 
 #date_tag=pi-   ######<<< CHANGE HERE into today's date ######
-date_tag=mu-   ######<<< CHANGE HERE into today's date ######
-# date_tag=e-    ######<<< CHANGE HERE into today's date ######
+# date_tag=mu-   ######<<< CHANGE HERE into today's date ######
+date_tag=e-    ######<<< CHANGE HERE into today's date ######
 # date_tag=LEDCali    ######<<< CHANGE HERE into today's date ######
 # date_tag=lightCalibData    ######<<< CHANGE HERE into today's date ######
 #date_tag=pedestal
 
-energy=100GeV
-# energy=all
+# energy=100GeV
+energy=all
 
 #year=2022
 year=2023
 
-beam=sps
-# beam=ps
+# beam=sps
+beam=ps
 
 # year=2025
 # beam=kek
