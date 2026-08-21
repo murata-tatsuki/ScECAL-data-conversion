@@ -97,6 +97,7 @@ void fcnY(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag){
     f = chisq;
 }
 //----------------------------------------------------
+/*
 double* trackFit::TrackFit(int slience)
 {
     Double_t arglist[10];
@@ -180,6 +181,105 @@ double* trackFit::TrackFit(int slience)
     delete gMinuitY; gMinuitY=NULL;
     return fitpar;
 }   
+*/
+double* trackFit::TrackFit(int slience)
+{
+    Double_t arglist[10];
+    Int_t ierflg = 0;
+    static Double_t vstart[2];
+    static Double_t step[2];
+    static double fitpar[8]={0};
+
+    // ================= XZ Fit =================
+    gMinuitX = new TMinuit();  
+    gMinuitX->SetFCN(fcnX);
+    gMinuitX->SetPrintLevel(-1);
+
+    arglist[0] = 1;
+    gMinuitX->mnexcm("SET ERR", arglist ,1,ierflg);
+
+    Int_t nbins = xPosition.size();
+    if (nbins < 2) return fitpar; // 2点未満はフィット不可
+
+    double zLeft=291.55; double zRight=1; 
+    for(int i=0; i!=nbins; ++i){if(zxPosition[i]<zLeft) zLeft=zxPosition[i];if(zxPosition[i]>zRight) zRight=zxPosition[i];}
+    int itXleft=0, itXright=0;
+    for(int i=0; i!=nbins; ++i){if(zxPosition[i]==zLeft) itXleft=i;if(zxPosition[i]==zRight) itXright=i;}
+    double xLeft = xPosition[itXleft];
+    double xRight = xPosition[itXright];
+    
+    if((zRight-zLeft)==0) vstart[0] = 0;
+    else vstart[0] = (xRight-xLeft)/(zRight-zLeft);
+    vstart[1] = xPosition[0] - vstart[0]*zxPosition[0];
+
+    // ★修正1: vstartが0の時にstepが0になってパラメータが固定されるのを防ぐ
+    step[0] = (vstart[0] != 0) ? fabs(0.05 * vstart[0]) : 0.001;
+    step[1] = (vstart[1] != 0) ? fabs(0.05 * vstart[1]) : 0.1;
+
+    // ★修正2: 第5・第6引数を 0, 0 にして制限を解除
+    gMinuitX->mnparm(0, "Xslope",     vstart[0], step[0], 0, 0, ierflg);
+    gMinuitX->mnparm(1, "Xintercept", vstart[1], step[1], 0, 0, ierflg);
+
+    arglist[0] = 500;
+    arglist[1] = 1.;
+    gMinuitX->mnexcm("MIGRAD", arglist ,0,ierflg);
+
+    // ★修正3: フィット成功時のみ値を取り出す
+    if (ierflg == 0) {
+        gMinuitX->GetParameter(0, fitpar[0], fitpar[1]);
+        gMinuitX->GetParameter(1, fitpar[2], fitpar[3]);
+    } else {
+        fitpar[0] = vstart[0]; fitpar[1] = 999;
+        fitpar[2] = vstart[1]; fitpar[3] = 999;
+    }
+
+    // ================= YZ Fit =================
+    gMinuitY = new TMinuit();  
+    gMinuitY->SetFCN(fcnY);
+    gMinuitY->SetPrintLevel(-1);
+
+    arglist[0] = 1;
+    gMinuitY->mnexcm("SET ERR", arglist ,1,ierflg);
+
+    nbins = yPosition.size();
+    if (nbins < 2) return fitpar;
+
+    zLeft=291.55; zRight=1;
+    for(int i=0; i!=nbins; ++i){if(zyPosition[i]<zLeft) zLeft=zyPosition[i];if(zyPosition[i]>zRight) zRight=zyPosition[i];}
+    int itYleft=0, itYright=0;
+    for(int i=0; i!=nbins; ++i){if(zyPosition[i]==zLeft) itYleft=i;if(zyPosition[i]==zRight) itYright=i;}
+    double yLeft = yPosition[itYleft];
+    double yRight = yPosition[itYright];
+
+    if((zRight-zLeft)==0) vstart[0] = 0;
+    else vstart[0] = (yRight-yLeft)/(zRight-zLeft);
+    vstart[1] = yPosition[0] - vstart[0]*zyPosition[0];
+
+    // ★修正1
+    step[0] = (vstart[0] != 0) ? fabs(0.05 * vstart[0]) : 0.001;
+    step[1] = (vstart[1] != 0) ? fabs(0.05 * vstart[1]) : 0.1;
+
+    // ★修正2
+    gMinuitY->mnparm(0, "Yslope",     vstart[0], step[0], 0, 0, ierflg);
+    gMinuitY->mnparm(1, "Yintercept", vstart[1], step[1], 0, 0, ierflg);
+
+    arglist[0] = 500;
+    arglist[1] = 1.;
+    gMinuitY->mnexcm("MIGRAD", arglist ,0,ierflg);
+
+    // ★修正3
+    if (ierflg == 0) {
+        gMinuitY->GetParameter(0, fitpar[4], fitpar[5]);
+        gMinuitY->GetParameter(1, fitpar[6], fitpar[7]);
+    } else {
+        fitpar[4] = vstart[0]; fitpar[5] = 999;
+        fitpar[6] = vstart[1]; fitpar[7] = 999;
+    }
+
+    delete gMinuitX; gMinuitX=NULL;
+    delete gMinuitY; gMinuitY=NULL;
+    return fitpar;
+}
 //----------------------------------------------------
 trackFit::trackFit(string root_name,string track_name, string layer)
 {

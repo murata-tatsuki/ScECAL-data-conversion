@@ -48,6 +48,9 @@ track_fit: track_fit.cxx $(OBJ) #$(DIR_BIN)
 track_fit_: track_fit_.cxx $(OBJ) #$(DIR_BIN)
 	$(CXX) $(CPPFLAGS) $< $(OBJ) $(CPPLIBS)  -o $(DIR_BIN)/$(notdir $@)
 
+track_fit_3D: track_fit_3D.cxx $(OBJ) #$(DIR_BIN)
+	$(CXX) $(CPPFLAGS) $< $(OBJ) $(CPPLIBS)  -o $(DIR_BIN)/$(notdir $@)
+
 mip: mip.cxx $(OBJ) #$(DIR_BIN)
 	$(CXX) $(CPPFLAGS) $< $(OBJ) $(CPPLIBS)  -o $(DIR_BIN)/$(notdir $@)
 
