@@ -1,5 +1,5 @@
 #！/bin/sh
-source ./global_config_CR
+source ./global_config
 
 #work_dir='/mnt2/debug/cheyuzhi/ecal_ana'
 #data_dir='/mnt2/debug/cheyuzhi/data'
@@ -36,11 +36,12 @@ do
         fi
 
         echo "Track Fitting with SSA ${prefix}"
-        echo " ... ... "
-        ${bin_dir}/track_fit_3d ${stripsplit_o}/${dat_name} "${trackFit_o}/" ${layer}
-        echo "    Output dir ===> ${trackFit_o}/${prefix}.root "
+        # echo " ... ... "
+        # ${bin_dir}/track_fit_3d ${stripsplit_o}/${dat_name} "${trackFit_o}/" ${layer}
+        sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/track_fit_3d ${stripsplit_o}/${dat_name} "${trackFit_o}/" ${layer}
+        # echo "    Output dir ===> ${trackFit_o}/${prefix}.root "
 
-        echo "=============================="
+        # echo "=============================="
 
 #	./bin/track_fit ${input_file}/${dat_name} ${track_file} ${layer}
 done

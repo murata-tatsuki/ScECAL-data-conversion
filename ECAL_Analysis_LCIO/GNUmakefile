@@ -31,7 +31,7 @@ CXX = g++
 CPPFLAGS = -g -Wall -I$(DIR_INCLUDE)
 
 ####### Make Execuatbles#######
-all: decode pedestal pedestal_pedestal calib track_fit track_fit_ mip hl_ratio ssa simpleCalib 
+all: decode pedestal pedestal_pedestal calib track_fit track_fit_ track_fit_3d mip hl_ratio ssa simpleCalib 
 
 decode: decode.cxx $(OBJ) #$(DIR_BIN)
 	$(CXX) $(CPPFLAGS) $< $(OBJ) $(CPPLIBS)  -o $(DIR_BIN)/$(notdir $@)
@@ -48,7 +48,7 @@ track_fit: track_fit.cxx $(OBJ) #$(DIR_BIN)
 track_fit_: track_fit_.cxx $(OBJ) #$(DIR_BIN)
 	$(CXX) $(CPPFLAGS) $< $(OBJ) $(CPPLIBS)  -o $(DIR_BIN)/$(notdir $@)
 
-track_fit_3D: track_fit_3D.cxx $(OBJ) #$(DIR_BIN)
+track_fit_3d: track_fit_3d.cxx $(OBJ) #$(DIR_BIN)
 	$(CXX) $(CPPFLAGS) $< $(OBJ) $(CPPLIBS)  -o $(DIR_BIN)/$(notdir $@)
 
 mip: mip.cxx $(OBJ) #$(DIR_BIN)
