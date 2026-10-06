@@ -8,6 +8,8 @@
 #include<TMath.h>
 #include<TMath.h>
 #include<numeric>
+#include<algorithm>
+#include<cmath>
 #include"StripSplit.h"
 
 using namespace std;
@@ -131,8 +133,8 @@ int treeStripSplit::StripSplit(string txt_name,string cali_name,string ssa_name)
             // only save hit=1 events, above threshold for auto-trigger
             // if(_hitTag->at(i_hit)==0) continue;
 
-            int layerID = _cellID->at(i_hit)/1e5;
-            int chipIDs = (_cellID->at(i_hit)/100000)%10;
+            int layerID = _cellID->at(i_hit)/100000;
+            int chipIDs = (_cellID->at(i_hit)%100000)/10000;
             int channelIDs = _cellID->at(i_hit)%100;
             double posX = _posX->at(i_hit);
             double posY = _posY->at(i_hit);
@@ -157,7 +159,10 @@ int treeStripSplit::StripSplit(string txt_name,string cali_name,string ssa_name)
             for(int j=0; j!=(int)_cellID->size(); ++j)
             {
                 if (j==i_hit) continue;
-                int layerIDis = _cellID->at(j)/1e5;
+                int layerIDis = _cellID->at(j)/100000;
+                int chipIDis = (_cellID->at(j)%100000)/10000;
+                int channelIDis = _cellID->at(j)%100;
+                if (chipIDis==5 && channelIDis>29) continue;
                 double posXis = _posX->at(j);
                 double posYis = _posY->at(j);
                 double posYedge = 0.;
@@ -219,7 +224,6 @@ int treeStripSplit::StripSplit(string txt_name,string cali_name,string ssa_name)
                                 }
                                 // highWeightSum += timeis;
                                 // lowWeightSum += chargeis;
-                                energyWeightSum += energyis;
                             }
                         }
                     }
@@ -276,7 +280,6 @@ int treeStripSplit::StripSplit(string txt_name,string cali_name,string ssa_name)
                                 }
                                 // highWeightSum += timeis;
                                 // lowWeightSum += chargeis;
-                                energyWeightSum += energyis;
                             }
                         }
                     }
@@ -286,7 +289,27 @@ int treeStripSplit::StripSplit(string txt_name,string cali_name,string ssa_name)
 //            cout << "highWeightSum: " << highWeightSum << endl;
             // if (highWeight.size()!=0 && highWeightSum>0.) {
                 // for(int k=0; k!=(int)highWeight.size(); ++k) {
-            if (energyWeight.size()!=0 && energyWeightSum>0.) {
+            // Aggregate signed signals at each candidate position first. Negative
+            // candidates cannot define a position fraction; keep the parent sign.
+            bool validWeights = true;
+            double maxWeight = 0.;
+            for (double& weight : energyWeight) {
+                if (!std::isfinite(weight)) {
+                    validWeights = false;
+                    break;
+                }
+                weight = std::max(0., weight);
+                maxWeight = std::max(maxWeight, weight);
+            }
+            // Rescale before summing: the denominator is then at least one,
+            // avoiding cancellation, overflow, and division by a tiny sum.
+            if (validWeights && maxWeight>0.) {
+                for (double& weight : energyWeight) {
+                    weight /= maxWeight;
+                    energyWeightSum += weight;
+                }
+            }
+            if (validWeights && energyWeight.size()!=0 && energyWeightSum>0.) {
                 for(int k=0; k!=(int)energyWeight.size(); ++k) {
                     if (energyWeight[k]==0.) continue;
 /*                    cout << "i_hit: " << i_hit << "  cellID: " << _cellID->at(i_hit) << endl;
