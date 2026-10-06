@@ -45,12 +45,12 @@ then
                 prefix=${file_name%.root}
 
                 if [[ -e ${calib_o}/${prefix}.root ]]
-                  then
-                          echo "${calib_o}/${prefix} has been decoded, skip ..."
-                          continue
-                  fi
-                
-                sbatch -o output/test-%A_%a.out --error="output/test-%A_%a.err" execute_analyzer_calib.sl ${decode_o}/${file_name} ${pede_factor} ${inter_factor} ${mip_factor} ${calib_o}/${prefix}.root
+                then
+                        echo "${calib_o}/${prefix} has been decoded, skip ..."
+                        continue
+                fi
+        
+                sbatch -o output/test-%A.out --error="output/test-%A.err" execute_analyzer_calib.sl ${decode_o}/${file_name} ${pede_factor} ${inter_factor} ${mip_factor} ${calib_o}/${prefix}.root
 
                 # echo "Calibration ${prefix}"
                 # echo " ... ... "
@@ -84,12 +84,12 @@ then
                 mkdir -p ${calib_ou}
 
                 if [[ -e ${calib_ou}/${prefix}.root ]]
-                  then
-                          echo "${calib_ou}/${prefix} has been decoded, skip ..."
-                          continue
-                  fi
+                then
+                        echo "${calib_ou}/${prefix} has been decoded, skip ..."
+                        continue
+                fi
                 
-                echo sbatch -o output/test-%A_%a.out --error="output/test-%A_%a.err" execute_analyzer_calib.sl ${decode_ou}/${file_name} ${pede_factor} ${inter_factor} ${mip_factor} ${calib_ou}/${prefix}.root
+                sbatch -o output/test-%A.out --error="output/test-%A.err" execute_analyzer_calib.sl ${decode_ou}/${file_name} ${pede_factor} ${inter_factor} ${mip_factor} ${calib_ou}/${prefix}.root
 
         #         echo "Calibration ${prefix}"
         #         echo " ... ... "

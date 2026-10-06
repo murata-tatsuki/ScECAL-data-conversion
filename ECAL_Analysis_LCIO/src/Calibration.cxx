@@ -75,6 +75,7 @@ void processCali::MIPFactorExtract(string interfactor_name)
         int _layerID = _cellID/1e6;
         int _chipID = _cellID%1000000/1e4;
         int _chnID = _cellID%10000%100;
+        if(_landauMPV<0) continue;
         
         if(_layerID>3 && _layerID<28) {
             if(_ChiSqr/(double)_ndf>2) continue;

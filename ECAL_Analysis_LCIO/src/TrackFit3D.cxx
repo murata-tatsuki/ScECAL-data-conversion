@@ -67,6 +67,15 @@ void trackFit3D::Clear()
   zPosition3D.clear();
   zxPosition3D.clear();
   zyPosition3D.clear();
+
+	_CellID_new.clear();
+  _Hit_Energy_new.clear();
+  _Hit_X_new.clear();
+  _Hit_Y_new.clear();
+  _Hit_Z_new.clear();
+  _temp.clear();
+  _temp_new.clear();
+  _trackTag.clear();
 }
 //----------------------------------------------------
 void trackFit3D::Reset()

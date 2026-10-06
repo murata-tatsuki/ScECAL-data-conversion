@@ -26,23 +26,25 @@ mkdir -p ${trackFit_o}
 
 for dat_name in $(ls ${stripsplit_o})
 do
-	file_name=`basename $dat_name`
-	prefix=${file_name%.root}
-	
-	if [[ -e ${trackFit_o}/${prefix}.root ]]
-          then
-                  echo "${trackFit_o}/${prefix} has been decoded, skip ..."
-                  continue
-        fi
+  file_name=`basename $dat_name`
+  prefix=${file_name%.root}
+  
+  if [[ -e ${trackFit_o}/${prefix}.root ]]
+  then
+    echo "${trackFit_o}/${prefix} has been decoded, skip ..."
+    continue
+  fi
 
-        echo "Track Fitting with SSA ${prefix}"
-        # echo " ... ... "
-        # ${bin_dir}/track_fit_3d ${stripsplit_o}/${dat_name} "${trackFit_o}/" ${layer}
-        sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/track_fit_3d ${stripsplit_o}/${dat_name} "${trackFit_o}/" ${layer}
-        # echo "    Output dir ===> ${trackFit_o}/${prefix}.root "
+  mkdir -p ${trackFit_o}/graph
 
-        # echo "=============================="
+  echo "Track Fitting with SSA ${prefix}"
+  # echo " ... ... "
+  # ${bin_dir}/track_fit_3d ${stripsplit_o}/${dat_name} "${trackFit_o}/" ${layer}
+  sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/track_fit_3d ${stripsplit_o}/${dat_name} "${trackFit_o}/" ${layer}
+  # echo "    Output dir ===> ${trackFit_o}/${prefix}.root "
 
-#	./bin/track_fit ${input_file}/${dat_name} ${track_file} ${layer}
+  # echo "=============================="
+
+#  ./bin/track_fit ${input_file}/${dat_name} ${track_file} ${layer}
 done
 

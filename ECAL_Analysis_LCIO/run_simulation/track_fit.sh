@@ -1,27 +1,34 @@
 #！/bin/sh
 
-work_dir='/mnt2/debug/cheyuzhi/ecal_ana'
-data_dir='/mnt2/debug/cheyuzhi/data'
+source ./global_config
+
 layer=8
 
-#----------- INPUT -----------
-file_tag=221018
-# input_file="${data_dir}/analyseCode/MIPCalib/calibration/${file_tag}"
-input_file="${data_dir}/analyseCode/RawtoRoot/${file_tag}"
+input_file=${simpleCalib_path}
+# input_file=${calib_path}
+trackfile=${trackFit_path}
+# trackfile=${data_dir}/${year}/${beam}/trackFit/${date_tag}/${energy}
+# trackfile=${data_dir}/${year}/${beam}/trackFit_layer16/${date_tag}/${energy}
 
-#----------- OUTPUT -----------
-track_file="${data_dir}/analyseCode/TrackFit/${file_tag}/"
 
-if [[ ! -d $track_file ]]
-	then
-	mkdir -p $track_file
-fi
+#echo $datafile
+#./main ${DIR_IN} ${DIR_OUT1} ${layer} 
+mkdir -p ${trackfile}
 
+ ##### for file loop
+ num=0
 for dat_name in $(ls ${input_file})
-do
-	dat_name=`basename $dat_name`
-	echo $track_file
-	echo "./bin/track_fit ${input_file} ${track_file} ${layer}"
-	./bin/track_fit ${input_file}/${dat_name} ${track_file} ${layer}
+  do
+
+
+  prefix=`basename $dat_name`
+  # if [[ -e ${trackfile}/${prefix} ]]
+  # then
+  #   echo "\[${prefix}\] has been decoded, skip ..."
+  #   continue
+  # fi
+
+  sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/track_fit ${input_file}/${dat_name} ${trackfile}/ ${layer}
+
 done
 
