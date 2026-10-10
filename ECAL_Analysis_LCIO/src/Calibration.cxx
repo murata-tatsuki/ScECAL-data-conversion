@@ -7,8 +7,39 @@
 #include<TStyle.h>
 #include<TMath.h>
 #include<TRandom.h>
+#include<cmath>
+#include<memory>
+#include<stdexcept>
 #include"Calibration.h"
 #include"EBUdecode.h"
+
+namespace {
+bool connectedChannel(int layer, int chip, int channel)
+{
+    return layer >= 0 && layer < 32 && chip >= 0 && chip < 6 &&
+           channel >= 0 && channel < 36 && !(chip == 5 && channel > 29);
+}
+
+int calibrationGroup(int layer)
+{
+    return (layer > 3 && layer < 28) ? 1 : 0;
+}
+
+std::unique_ptr<TFile> openFactorFile(const string& name)
+{
+    std::unique_ptr<TFile> file(TFile::Open(name.c_str(), "READ"));
+    if (!file || file->IsZombie())
+        throw std::runtime_error("Cannot open calibration factor file: " + name);
+    return file;
+}
+
+template<typename T>
+void bindFactorBranch(TTree* tree, const char* name, T* address)
+{
+    if (tree->SetBranchAddress(name, address) < 0)
+        throw std::runtime_error(string("Cannot read calibration branch: ") + name);
+}
+}
 
 void processCali::PedestalExtract(string pedestal_name)
 {
@@ -369,124 +400,133 @@ void processCali::PedestalExtract_simulation(string pedestal_name)
 
 void processCali::MIPFactorExtract_simulation(string interfactor_name)
 {
-    cout<<"=========== MIPFactorExtract ============"<<endl;
+    cout << "=========== MIPFactorExtract ============" << endl;
+    auto infile = openFactorFile(interfactor_name);
+    TTree* intree = nullptr;
+    infile->GetObject("MIP_Fit", intree);
+    if (!intree) throw std::runtime_error("Missing MIP_Fit tree: " + interfactor_name);
+    int cellID = 0, ndf = 0;
+    double mpv = 0., chiSquare = 0.;
+    bindFactorBranch(intree, "CellID", &cellID);
+    bindFactorBranch(intree, "LandauMPV", &mpv);
+    bindFactorBranch(intree, "ChiSquare", &chiSquare);
+    bindFactorBranch(intree, "NDF", &ndf);
 
-    // ******************************************************************************
-    // *********************************************************************************
-    int _cellID, _ndf;
-    double _landauMPV, _landauWidth,  _gausSigma, _ChiSqr;
-    TFile *infile = new TFile(interfactor_name.c_str());
-    TTree* intree = (TTree*)infile->Get("MIP_Fit");
-    intree->SetBranchAddress("CellID",&_cellID);
-    intree->SetBranchAddress("LandauMPV",&_landauMPV);
-    intree->SetBranchAddress("LandauWidth",&_landauWidth);
-    intree->SetBranchAddress("GausSigma",&_gausSigma);
-    intree->SetBranchAddress("ChiSquare",&_ChiSqr);
-    intree->SetBranchAddress("NDF",&_ndf);
+    for (int l = 0; l < layerNu; ++l)
+        for (int p = 0; p < chipNu; ++p)
+            for (int c = 0; c < channelNu; ++c) mipFactorValid[l][p][c] = false;
 
-    double meanEBU15=0; double meanEBU10=0;
-    double chnEBU15=0; double chnEBU10=0;
-    for(int entry=0; entry!=intree->GetEntries(); entry++)
-    {
-        intree->GetEntry(entry);
-        int _layerID = _cellID/1e5;
-        int _chipID = _cellID%100000/1e4;
-        int _chnID = _cellID%10000%100;
-        
-        if(_layerID>3 && _layerID<28) {
-            if(_ChiSqr/(double)_ndf>2) continue;
-            chnEBU10++;
-            meanEBU10 +=_landauMPV;
+    int rejected = 0;
+    for (Long64_t entry = 0; entry < intree->GetEntries(); ++entry) {
+        if (intree->GetEntry(entry) <= 0) throw std::runtime_error("Cannot read MIP factor entry");
+        int l = cellID / 100000, p = (cellID % 100000) / 10000, c = cellID % 100;
+        if (cellID < 0 || !connectedChannel(l, p, c)) { ++rejected; continue; }
+        double limit = calibrationGroup(l) == 1 ? 2. : 1.7;
+        if (!std::isfinite(mpv) || mpv <= 0. || ndf <= 0 ||
+            !std::isfinite(chiSquare) || chiSquare < 0. || chiSquare / ndf > limit) {
+            ++rejected;
+            continue;
         }
-        else if(_layerID<30) {
-            if(_ChiSqr/(double)_ndf>1.7) continue;
-            chnEBU15++;
-            meanEBU15 +=_landauMPV;
-        }
-        mipFactor[_layerID][_chipID][_chnID] = _landauMPV;
+        mipFactor[l][p][c] = mpv;
+        mipFactorValid[l][p][c] = true;
     }
 
-    meanEBU10 = meanEBU10/chnEBU10;
-    meanEBU15 = meanEBU15/chnEBU15;
-
-    cout<<" mean of mipFactor : "<<meanEBU15<<" , "<<meanEBU10<<endl;
-
-    for(int il=0; il<layerNu; il++){
-        for(int ip=0; ip<chipNu; ip++){
-            for(int ic=0; ic<channelNu; ic++){
-                if(il>3 && il<28) {
-                    if(mipFactor[il][ip][ic]==1) mipFactor[il][ip][ic] = meanEBU10;
+    // Use each accepted physical channel once; layers 30/31 do not set the means.
+    long double sum[2] = {0., 0.};
+    int count[2] = {0, 0};
+    for (int l = 0; l < 30; ++l)
+        for (int p = 0; p < chipNu; ++p)
+            for (int c = 0; c < channelNu; ++c)
+                if (connectedChannel(l, p, c) && mipFactorValid[l][p][c]) {
+                    int group = calibrationGroup(l);
+                    sum[group] += mipFactor[l][p][c];
+                    ++count[group];
                 }
-                else{
-                    if(mipFactor[il][ip][ic]==1) mipFactor[il][ip][ic] = meanEBU15;
+    double mean[2];
+    for (int group = 0; group < 2; ++group) {
+        if (count[group] == 0) throw std::runtime_error("No valid MIP factors in group " + std::to_string(group));
+        mean[group] = static_cast<double>(sum[group] / count[group]);
+        if (!std::isfinite(mean[group]) || mean[group] <= 0.)
+            throw std::runtime_error("Invalid mean MIP factor");
+    }
+    int replaced = 0;
+    for (int l = 0; l < layerNu; ++l)
+        for (int p = 0; p < chipNu; ++p)
+            for (int c = 0; c < channelNu; ++c)
+                if (connectedChannel(l, p, c) && !mipFactorValid[l][p][c]) {
+                    mipFactor[l][p][c] = mean[calibrationGroup(l)];
+                    ++replaced;
                 }
-            }}}
+    cout << " mean of mipFactor (EBU15, EBU10): " << mean[0] << " , " << mean[1]
+         << "; accepted channels: " << count[0] << " , " << count[1]
+         << "; rejected records: " << rejected << "; supplemented channels: " << replaced << endl;
 }
 
 void processCali::InterFactorExtract_simulation(string interfactor_name)
 {
+    cout << "=========== InterFactorExtract ============" << endl;
+    auto infile = openFactorFile(interfactor_name);
+    TTree* intree = nullptr;
+    infile->GetObject("InterCalib", intree);
+    if (!intree) throw std::runtime_error("Missing InterCalib tree: " + interfactor_name);
+    int cellID = 0;
+    double slope = 0., intercept = 0.;
+    bindFactorBranch(intree, "CellID", &cellID);
+    bindFactorBranch(intree, "Slope", &slope);
+    bindFactorBranch(intree, "Intercept", &intercept);
 
-    cout<<"=========== InterFactorExtract ============"<<endl;
-    // *********************************************************************************
-    // *********************************************************************************
-    int _cellID;
-    double _interFactor, _intercept;
-    TFile *infile = new TFile(interfactor_name.c_str());
-    TTree* intree = (TTree*)infile->Get("InterCalib");
-    intree->SetBranchAddress("CellID",&_cellID);
-    intree->SetBranchAddress("Slope",&_interFactor);
-    intree->SetBranchAddress("Intercept",&_intercept);
+    for (int l = 0; l < layerNu; ++l)
+        for (int p = 0; p < chipNu; ++p)
+            for (int c = 0; c < channelNu; ++c) interFactorValid[l][p][c] = false;
 
-    double meanEBU15=0; double meanEBU10=0;
-    double meanInterceptEBU15=0; double meanInterceptEBU10=0;
-    double chnEBU15=0; double chnEBU10=0;
-    for(int entry=0; entry!=intree->GetEntries(); entry++)
-    {
-        intree->GetEntry(entry);
-        // int _layerID = entry/EBUchn;
-        // int _chipID = entry%EBUchn/36;
-        // int _chnID = entry%EBUchn%36;
-        int _layerID = _cellID/1e5;
-        int _chipID = _cellID%100000/1e4;
-        int _chnID = _cellID%10000%100;
-       if(_interFactor<0.02 || _interFactor>0.05) continue;
-
-       interFactor[_layerID][_chipID][_chnID] = 1./_interFactor;
-       interFactorIntercept[_layerID][_chipID][_chnID] = -_intercept/_interFactor;
-        
-        if(_layerID>3 && _layerID<28) {
-            chnEBU10++;
-            meanEBU10 += 1./_interFactor;
-            meanInterceptEBU10 += -_intercept/_interFactor;
+    int rejected = 0;
+    for (Long64_t entry = 0; entry < intree->GetEntries(); ++entry) {
+        if (intree->GetEntry(entry) <= 0) throw std::runtime_error("Cannot read HL factor entry");
+        int l = cellID / 100000, p = (cellID % 100000) / 10000, c = cellID % 100;
+        if (cellID < 0 || !connectedChannel(l, p, c) ||
+            !std::isfinite(slope) || slope < 0.02 || slope > 0.05 || !std::isfinite(intercept)) {
+            ++rejected;
+            continue;
         }
-        else if(_layerID<30) {
-            chnEBU15++;
-            meanEBU15 += 1./_interFactor;
-            meanInterceptEBU15 += -_intercept/_interFactor;
-        }
+        double factor = 1. / slope, offset = -intercept / slope;
+        if (!std::isfinite(factor) || !std::isfinite(offset)) { ++rejected; continue; }
+        interFactor[l][p][c] = factor;
+        interFactorIntercept[l][p][c] = offset;
+        interFactorValid[l][p][c] = true;
     }
 
-    meanEBU10 = meanEBU10/chnEBU10;
-    meanEBU15 = meanEBU15/chnEBU15;
-    meanInterceptEBU10 = meanInterceptEBU10/chnEBU10;
-    meanInterceptEBU15 = meanInterceptEBU15/chnEBU15;
-
-    cout<<" mean of interFactor : "<<meanEBU15<<" , "<<meanEBU10<<endl;
-    cout<<" mean of intercept   : "<<meanInterceptEBU15<<" , "<<meanInterceptEBU10<<endl;
-
-    for(int il=0; il<layerNu; il++){
-        for(int ip=0; ip<chipNu; ip++){
-            for(int ic=0; ic<channelNu; ic++){
-                if(il>3 && il<28) {
-                    if(interFactor[il][ip][ic]==1) interFactor[il][ip][ic] = meanEBU10;
-                    if(interFactorIntercept[il][ip][ic]==1) interFactorIntercept[il][ip][ic] = meanInterceptEBU10;
+    long double sum[2] = {0., 0.}, offsetSum[2] = {0., 0.};
+    int count[2] = {0, 0};
+    for (int l = 0; l < 30; ++l)
+        for (int p = 0; p < chipNu; ++p)
+            for (int c = 0; c < channelNu; ++c)
+                if (connectedChannel(l, p, c) && interFactorValid[l][p][c]) {
+                    int group = calibrationGroup(l);
+                    sum[group] += interFactor[l][p][c];
+                    offsetSum[group] += interFactorIntercept[l][p][c];
+                    ++count[group];
                 }
-                else{
-                    if(interFactor[il][ip][ic]==1) interFactor[il][ip][ic] = meanEBU15;
-                    if(interFactorIntercept[il][ip][ic]==1) interFactorIntercept[il][ip][ic] = meanInterceptEBU15;
+    double mean[2], meanOffset[2];
+    for (int group = 0; group < 2; ++group) {
+        if (count[group] == 0) throw std::runtime_error("No valid HL factors in group " + std::to_string(group));
+        mean[group] = static_cast<double>(sum[group] / count[group]);
+        meanOffset[group] = static_cast<double>(offsetSum[group] / count[group]);
+        if (!std::isfinite(mean[group]) || mean[group] <= 0. || !std::isfinite(meanOffset[group]))
+            throw std::runtime_error("Invalid mean HL factors");
+    }
+    int replaced = 0;
+    for (int l = 0; l < layerNu; ++l)
+        for (int p = 0; p < chipNu; ++p)
+            for (int c = 0; c < channelNu; ++c)
+                if (connectedChannel(l, p, c) && !interFactorValid[l][p][c]) {
+                    int group = calibrationGroup(l);
+                    interFactor[l][p][c] = mean[group];
+                    interFactorIntercept[l][p][c] = meanOffset[group];
+                    ++replaced;
                 }
-            }}}
-
+    cout << " mean of interFactor (EBU15, EBU10): " << mean[0] << " , " << mean[1] << endl;
+    cout << " mean of intercept (EBU15, EBU10): " << meanOffset[0] << " , " << meanOffset[1]
+         << "; rejected records: " << rejected << "; supplemented channels: " << replaced << endl;
 }
 
 void processCali::Init()
@@ -496,6 +536,9 @@ void processCali::Init()
             for(int ic=0; ic<channelNu; ic++){
                 mipFactor[il][ip][ic]=1;
                 interFactor[il][ip][ic]=1;
+                interFactorIntercept[il][ip][ic]=0;
+                mipFactorValid[il][ip][ic]=false;
+                interFactorValid[il][ip][ic]=false;
             }}}
 }
 

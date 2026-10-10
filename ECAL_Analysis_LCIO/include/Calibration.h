@@ -37,8 +37,10 @@ class processCali
     double pedMeanTimesChnLevel[layerNu][chipNu][channelNu]={0};
     double pedSigmaTimesChnLevel[layerNu][chipNu][channelNu]={0};
     double interFactor[layerNu][chipNu][channelNu]={1};
-    double interFactorIntercept[layerNu][chipNu][channelNu]={1};
+    double interFactorIntercept[layerNu][chipNu][channelNu]={0};
     double mipFactor[layerNu][chipNu][channelNu]={1};
+    bool mipFactorValid[layerNu][chipNu][channelNu]={false};
+    bool interFactorValid[layerNu][chipNu][channelNu]={false};
     
     // for EventAlign
     TFile* rawfile;

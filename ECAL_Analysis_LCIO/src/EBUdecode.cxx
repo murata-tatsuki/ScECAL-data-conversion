@@ -1,6 +1,10 @@
 #include "EBUdecode.h"
 #include <fstream>
 #include <iostream>
+#include <algorithm>
+#include <array>
+#include <limits>
+#include <stdexcept>
 
 using namespace std;
 
@@ -69,39 +73,33 @@ double* EBUdecode(int LayerIDs, int ChipIDs, int ChannelIDs)
 
 double tempReconstruction(int LayerID, double* position, vector<double> tempSensor)
 {
-	double localTemperature;
-	const int sensorNo = 16;
-	double posX[sensorNo] = { 39.5986, -106.197, 89.9922, -22.1234, -103.886, -0.508, -60.2488, 59.1312, 28.2702, -50.3428, 100.99, -106.68, -106.299, 105.918, -47.0916, 53.2638 };
-	double posY[sensorNo] = { -34.3916, -34.0868, -11.1506, -13.1064, 8.0772, 7.366, 34.5186, 33.7312, 54.0766, 75.819, 101.473, 101.498, -101.752, -102.032, -70.6882, -70.3326 };
-	double sum = 0;
-	double length = 0;
-	double x, y;
-	for (int g = 0; g < sensorNo; g++) {
-		if (LayerID % 2 == 0) {
-			x = -posY[g];
-			y = -posX[g];
-		}
-		if (LayerID % 2 == 1) {
-			x = -posX[g];
-			y = -posY[g];
-		}
-		length = std::sqrt(std::pow((*position - x), 2) + std::pow((*(position + 1) - y), 2));
-		sum += 1 / length;
-	}
-	for (int g = 0; g < sensorNo; g++) {
-		if (LayerID % 2 == 0) {
-			x = -posY[g];
-			y = -posX[g];
-		}
-		if (LayerID % 2 == 1) {
-			x = -posX[g];
-			y = -posY[g];
-		}
-		//if(LayerID%2==0) {x = posY[g]; y = -posX[g];}
-		//if(LayerID%2==1) {x = -posX[g]; y = posY[g];}
-		length = std::sqrt(std::pow((*position - x), 2) + std::pow((*(position + 1) - y), 2));
-		double weight = 1 / length / sum;
-		localTemperature += weight * tempSensor[g];
-	}
-	return localTemperature;
+    const int sensorNo = 16;
+    if (LayerID < 0 || LayerID >= 32 || !position ||
+        !std::isfinite(position[0]) || !std::isfinite(position[1]) || tempSensor.size() != sensorNo)
+        throw std::runtime_error("Invalid temperature interpolation input");
+    for (double value : tempSensor)
+        if (!std::isfinite(value)) throw std::runtime_error("Non-finite temperature sensor value");
+
+    const double posX[sensorNo] = {39.5986, -106.197, 89.9922, -22.1234, -103.886, -0.508, -60.2488, 59.1312, 28.2702, -50.3428, 100.99, -106.68, -106.299, 105.918, -47.0916, 53.2638};
+    const double posY[sensorNo] = {-34.3916, -34.0868, -11.1506, -13.1064, 8.0772, 7.366, 34.5186, 33.7312, 54.0766, 75.819, 101.473, 101.498, -101.752, -102.032, -70.6882, -70.3326};
+    std::array<double, sensorNo> distances;
+    double minDistance = std::numeric_limits<double>::infinity();
+    for (int g = 0; g < sensorNo; ++g) {
+        double x = LayerID % 2 == 0 ? -posY[g] : -posX[g];
+        double y = LayerID % 2 == 0 ? -posX[g] : -posY[g];
+        distances[g] = std::hypot(position[0] - x, position[1] - y);
+        if (!std::isfinite(distances[g])) throw std::runtime_error("Invalid temperature sensor distance");
+        if (distances[g] == 0.) return tempSensor[g];
+        minDistance = std::min(minDistance, distances[g]);
+    }
+    // Rescaling inverse-distance weights avoids division by zero and overflow.
+    long double localTemperature = 0., sum = 0.;
+    for (int g = 0; g < sensorNo; ++g) {
+        double weight = minDistance / distances[g];
+        sum += weight;
+        localTemperature += static_cast<long double>(weight) * tempSensor[g];
+    }
+    double result = static_cast<double>(localTemperature / sum);
+    if (!std::isfinite(result)) throw std::runtime_error("Invalid reconstructed temperature");
+    return result;
 }
