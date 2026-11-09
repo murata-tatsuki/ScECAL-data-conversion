@@ -26,11 +26,20 @@ factor_dir="/megraid01/users/data_beamtest/simulation/CEPCScECAL_SML_Portable_up
 date_tag="e-/threScan"
 date_tag="e-/sps"
 # date_tag="e-/sps_beam"
-# date_tag="mu-/mu_track/threshold"
-date_tag="e-/e_ssa/threshold"
 
-# energy=100GeV
-energy=all
+date_tag="mu-/mu_track/threshold"
+# date_tag="mu-/mu_track/threshold_MPVwoCT"
+# date_tag="mu-/mu_track_slope_2_14/threshold"
+# date_tag="mu-/mu_track_slope_2_14/threshold_MPVwoCT"
+date_tag="mu-/mu_track_slope_4s6_14/threshold_MPVwoCT"
+
+# date_tag="e-/e_ssa/threshold"
+
+# date_tag="e-/beam_scan/point"
+# date_tag="e-/beam_scan/point_noTriggerSci"
+
+energy=100GeV
+# energy=all
 
 #year=2022
 # year=2023
@@ -78,7 +87,8 @@ calib_path="${data_dir}/calib/${date_tag}/${energy}"
 
 simpleCalib_path=${data_dir}/simpleCalib/${date_tag}/${energy}
 
-stripSprit_path="${data_dir}/ssa/${date_tag}/${energy}"
+# stripSprit_path="${data_dir}/ssa/${date_tag}/${energy}"
+stripSprit_path="${data_dir}/ssaCalib/${date_tag}/${energy}"
 calibStripSprit_path="${data_dir}/ssaCalib/${date_tag}/${energy}"
 
 trackFit_path=${data_dir}/trackFit/${date_tag}/${energy}

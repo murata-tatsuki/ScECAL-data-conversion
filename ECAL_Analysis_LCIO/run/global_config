@@ -26,8 +26,8 @@ energy=all
 #year=2022
 year=2023
 
-# beam=sps
-beam=ps
+beam=sps
+# beam=ps
 
 # year=2025
 # beam=kek
