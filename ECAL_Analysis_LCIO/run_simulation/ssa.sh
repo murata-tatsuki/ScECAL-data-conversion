@@ -1,5 +1,7 @@
 #! /bin/bash
-source ./global_config
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "${script_dir}/global_config"
+mkdir -p "${script_dir}/output" || exit $?
 
 #------ I/O directories for each processor -------
 # Decode: Raw to ROOT
@@ -101,7 +103,7 @@ then
 
                 echo "strip splitting ${prefix}"
                 echo " ... ... "
-                sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/ssa ${file_name} "${calib_o}/" "${stripsplit_o}/"
+                bsub -q "${LSF_QUEUE:-s}" -n 1 -cwd "${script_dir}" -J ssa -o "${script_dir}/output/ssa.%J.out" -e "${script_dir}/output/ssa.%J.err" bash "${script_dir}/execute.sl" "${bin_dir}/ssa" "${file_name}" "${calib_o}/" "${stripsplit_o}/" || exit $?
                 echo "    Output dir ===> ${stripsplit_o}/${prefix}.root "
 
                 echo "=============================="
@@ -140,7 +142,7 @@ then
 
                 echo "strip splitting ${prefix}"
                 echo " ... ... "
-                sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/ssa ${file_name} "${calib_ou}/" "${stripsplit_ou}/"
+                bsub -q "${LSF_QUEUE:-s}" -n 1 -cwd "${script_dir}" -J ssa -o "${script_dir}/output/ssa.%J.out" -e "${script_dir}/output/ssa.%J.err" bash "${script_dir}/execute.sl" "${bin_dir}/ssa" "${file_name}" "${calib_ou}/" "${stripsplit_ou}/" || exit $?
                 echo "    Output dir ===> ${stripsplit_ou}/${prefix}.root "
 
                 echo "=============================="

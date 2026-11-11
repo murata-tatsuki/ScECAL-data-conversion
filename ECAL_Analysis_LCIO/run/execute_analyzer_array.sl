@@ -1,21 +1,17 @@
 #!/bin/bash
-###############################################################################
-# A sample SLURM script to run analyzer on 1 node
-#
-#  usage:
-#        (0) Edit this script
-#        (1) Submit the job.
-#            % cd $MEG2SYS/analyzer
-#            % sbatch -a 0-20%10 example/analyzer_array.sl
-#
-###############################################################################
+# KEKCC LSF job wrapper.
+# Array template: replace the sample workload before analysis.
+# Example: bsub -J "ecal_array[1-21]%10" < execute_analyzer_array.sl
 
-#SBATCH --partition=all
-#SBATCH --ntasks=1       
-#SBATCH --job-name=test
-#SBATCH --array=0
-#SBATCH --output="test-%A_%a.out"
-#SBATCH --error="test-%A_%a.err"
+#BSUB -q s
+#BSUB -n 1
+#BSUB -J "ecal_array[1]"
+#BSUB -cwd /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run
+#BSUB -o /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run/output/array.%J_%I.out
+#BSUB -e /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run/output/array.%J_%I.err
+
+script_dir="/gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run"
+cd -- "$script_dir" || exit 1
 
 MY_HOST=`hostname`
 MY_DATE=`date`
@@ -38,14 +34,16 @@ echo "================================================================"
 # Replace the start run number and configuration file by yours
 #
 START_RUNNUM=1
-RUNNUM=$(( START_RUNNUM + SLURM_ARRAY_TASK_ID ))
+TASK_INDEX=${LSB_JOBINDEX:-1}
+RUNNUM=$(( START_RUNNUM + TASK_INDEX - 1 ))
 #./meganalyzer -i example/bartenderMode.xml -r $RUNNUM -b
-echo "Process ID: $SLURM_ARRAY_TASK_ID"
+echo "Process ID: $TASK_INDEX"
 sleep 90
-echo "Process ID end: $SLURM_ARRAY_TASK_ID"
-
 RET=$?
+echo "Process ID end: $TASK_INDEX"
+
 echo "Exit status: $RET"
 echo "================================================================"
 END_DATE=`date`
 echo "End of run is $END_DATE ($SECONDS sec)"
+exit "$RET"

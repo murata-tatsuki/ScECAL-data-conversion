@@ -1,8 +1,9 @@
 #! /bin/bash
-work_dir='/megraid01/users/data_beamtest/analysis/ECAL_Analysis_LCIO'
-data_dir='/megraid01/users/data_beamtest/ECAL_data/analysed'
+work_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
+beamtest_dir=$(cd -- "${work_dir}/../.." && pwd -P)
+data_dir="${beamtest_dir}/ECAL_data/analysed"
 
-dat_dir='/megraid01/users/data_beamtest/ECAL_data/data'
+dat_dir="${beamtest_dir}/ECAL_data/data"
 
 bin_dir="${work_dir}/bin"
 raw_dir="${dat_dir}"
@@ -94,7 +95,7 @@ log_dir="${data_dir}/${year}/${beam}/log/${date_tag}/${energy}"
 
 
 ############### for simulation calibration parameters
-factor_dir="/megraid01/users/data_beamtest/simulation/CEPCScECAL_SML_Portable_update_new/Analysis_edit/share"
+factor_dir="${beamtest_dir}/simulation/CEPCScECAL_SML_Portable_update_new/Analysis_edit/share"
 pede_factor="${factor_dir}/pedestal2023_SPS.root"
 inter_factor="${factor_dir}/all_hl_electron2023_hlratio_v3.root"
 mip_factor="${factor_dir}/all_auto_muon_v4_trackfit.root"

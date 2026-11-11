@@ -1,6 +1,8 @@
 #！/bin/sh
 
-source ./global_config
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+cd -- "$script_dir" || exit 1
+source "${script_dir}/global_config"
 
 layer=8
 

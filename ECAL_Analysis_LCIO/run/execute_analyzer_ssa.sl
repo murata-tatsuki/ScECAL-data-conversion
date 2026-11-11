@@ -1,20 +1,16 @@
 #!/bin/bash
-###############################################################################
-# A sample SLURM script to run analyzer on 1 node
-#
-#  usage:
-#        (0) Edit this script
-#        (1) Submit the job.
-#            % cd $MEG2SYS/analyzer
-#            % sbatch example/analyzer.sl
-#
-###############################################################################
+# KEKCC LSF job wrapper.
+# Create output/ before submission, then: bsub < execute_analyzer_ssa.sl
 
-#SBATCH --partition=all
-#SBATCH --ntasks=1       
-#SBATCH --job-name=analyzer   
-#SBATCH --output="analyzer%A.out"
-#SBATCH --error="analyzer%A.err"
+#BSUB -q s
+#BSUB -n 1
+#BSUB -J "ecal_ssa"
+#BSUB -cwd /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run
+#BSUB -o /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run/output/ssa.%J.out
+#BSUB -e /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run/output/ssa.%J.err
+
+script_dir="/gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run"
+cd -- "$script_dir" || exit 1
 
 MY_HOST=`hostname`
 MY_DATE=`date`
@@ -37,10 +33,11 @@ echo "================================================================"
 # Replace configuration file by yours
 #
 #./meganalyzer -i example/bartenderMode.xml -r 1 -b
-./ssa.sh
+bash "${script_dir}/ssa.sh"
 
 RET=$?
 echo "Exit status: $RET"
 echo "================================================================"
 END_DATE=`date`
 echo "End of run is $END_DATE"
+exit "$RET"

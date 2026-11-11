@@ -1,5 +1,6 @@
 #! /bin/bash
-source ./global_config
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "${script_dir}/global_config"
 
 #------ I/O directories for each processor -------
 # Decode: Raw to ROOT

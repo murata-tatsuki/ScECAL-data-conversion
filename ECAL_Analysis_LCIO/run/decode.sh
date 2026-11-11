@@ -1,5 +1,7 @@
 #! /bin/bash
-source ./global_config
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+cd -- "$script_dir" || exit 1
+source "${script_dir}/global_config"
 
 particle=e+		######<<<<<CHANGE HERE ######
 dat=ECAL_Run195_20221027_025512.dat		######<<<<<CHANGE HERE ######

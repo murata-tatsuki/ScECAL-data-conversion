@@ -1,6 +1,8 @@
 #! /bin/bash
 # source ./global_config
-source /megraid01/users/data_beamtest/analysis/ECAL_Analysis_LCIO/run/seino_config
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+cd -- "$script_dir" || exit 1
+source "${script_dir}/backup/seino_config"
 
 #------ I/O directories for each processor -------
 # Decode: Raw to ROOT

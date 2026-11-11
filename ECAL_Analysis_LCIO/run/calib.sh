@@ -1,5 +1,8 @@
 #! /bin/bash
-source ./global_config
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+cd -- "$script_dir" || exit 1
+source "${script_dir}/global_config"
+mkdir -p "$script_dir/output" || exit $?
 
 #------ I/O directories for each processor -------
 # Decode: Raw to ROOT
@@ -50,7 +53,7 @@ then
                           continue
                   fi
                 
-                sbatch -o output/test-%A_%a.out --error="output/test-%A_%a.err" execute_analyzer_calib.sl ${decode_o}/${file_name} ${pede_factor} ${inter_factor} ${mip_factor} ${calib_o}/${prefix}.root
+                bsub -q "${LSF_QUEUE:-s}" -n 1 -cwd "$script_dir" -J ecal_calib -o "$script_dir/output/calib.%J.out" -e "$script_dir/output/calib.%J.err" bash "$script_dir/execute_analyzer_calib.sl" "${decode_o}/${file_name}" "$pede_factor" "$inter_factor" "$mip_factor" "${calib_o}/${prefix}.root" || exit $?
 
                 # echo "Calibration ${prefix}"
                 # echo " ... ... "
@@ -88,7 +91,7 @@ then
                           continue
                   fi
                 
-                sbatch -o output/test-%A_%a.out --error="output/test-%A_%a.err" execute_analyzer_calib.sl ${decode_ou}/${file_name} ${pede_factor} ${inter_factor} ${mip_factor} ${calib_ou}/${prefix}.root
+                bsub -q "${LSF_QUEUE:-s}" -n 1 -cwd "$script_dir" -J ecal_calib -o "$script_dir/output/calib.%J.out" -e "$script_dir/output/calib.%J.err" bash "$script_dir/execute_analyzer_calib.sl" "${decode_ou}/${file_name}" "$pede_factor" "$inter_factor" "$mip_factor" "${calib_ou}/${prefix}.root" || exit $?
 
 
         #         echo "Calibration ${prefix}"

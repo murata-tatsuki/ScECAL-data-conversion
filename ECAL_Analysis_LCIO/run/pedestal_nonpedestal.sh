@@ -1,5 +1,7 @@
 #! /bin/bash
-source ./global_config
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+cd -- "$script_dir" || exit 1
+source "${script_dir}/global_config"
 
 ## pedestal dirではないbeamに同期したrun dataを使う
 

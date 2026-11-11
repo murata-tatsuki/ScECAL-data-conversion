@@ -1,5 +1,6 @@
 #! /bin/bash
-source ./global_config
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "${script_dir}/global_config"
 
 particle=e+		######<<<<<CHANGE HERE ######
 dat=ECAL_Run195_20221027_025512.dat		######<<<<<CHANGE HERE ######
@@ -33,7 +34,7 @@ then
 		file_name=`basename $i`
 		prefix=${file_name%.dat}
 	
-		grep -q "${prefix}.root" auto_gain_files.txt
+		grep -q "${prefix}.root" "${script_dir}/auto_gain_files.txt"
 		if [[ $? -eq 0 ]]
 		then
 			echo "\[${prefix}\] is auto gain data, skip ..."
@@ -65,7 +66,7 @@ then
                 file_name=`basename $i`
                 prefix=${file_name%.dat}
         
-                grep -q "${prefix}.root" auto_gain_files.txt
+                grep -q "${prefix}.root" "${script_dir}/auto_gain_files.txt"
                 if [[ $? -eq 0 ]]
                 then
                         echo "\[${prefix}\] is auto gain data, skip ..."
@@ -107,7 +108,7 @@ then
 
 		mkdir -p ${decode_ou}
 
-		grep -q "${prefix}.root" auto_gain_files.txt
+		grep -q "${prefix}.root" "${script_dir}/auto_gain_files.txt"
 		if [[ $? -eq 0 ]]
 		then
 			echo "\[${prefix}\] is auto gain data, skip ..."

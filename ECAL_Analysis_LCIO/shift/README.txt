@@ -1,3 +1,15 @@
+# KEKCCでの利用について
+
+このディレクトリは旧2022年専用workflowです。以下の旧サーバー向け手順は
+現在のKEKCC用手順ではありません。通常の解析は ../run/README と
+../run/global_config を参照してください。
+
+現在の2022年rawデータは
+/gpfs/group/ilc/users/murata/data_beamtest/ECAL_data/data/2022/sps/{e+,pi+,mu+}/
+の粒子ディレクトリ直下にあり、このworkflowが想定するenergy階層はありません。
+また、auto_decode / hl_decode は現在のbin/とMakefileの生成対象に含まれません。
+shiftのコード・旧ログ・控えは旧環境の記録として保持しています。
+
 # Decode, Calibration and Diagnose Packages for CEPC ECAL Beam Test Data
 
 Yuzhi, CHE

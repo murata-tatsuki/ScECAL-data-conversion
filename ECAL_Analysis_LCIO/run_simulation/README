@@ -1,5 +1,28 @@
 # Decode, Calibration and Diagnose Packages for CEPC ECAL Beam Test Data
 
+KEKCCでは `global_config` の位置から `work_dir` と `/gpfs/group/ilc/users/murata/data_beamtest` を求める。
+MCの入出力は `simulation/CEPCScECAL_SML_Portable_update_new/Result_MC/`、校正定数は
+同じMCディレクトリの `Analysis_edit/share/` にある既存3ファイルを使う。
+実行は `bash /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run_simulation/<script>.sh` とする。
+calib / simpleCalib / SSA / track / calib_threScan の既存ジョブ投入分岐はKEKCCのLSF (`bsub`) に対応。
+`simpleCalib` の `energy=all` は従来どおり直列実行する。
+`global_config` を確認してから、例えば以下のように実行する（入力ファイルごとに1ジョブ、1 CPU）。
+
+  bash /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run_simulation/calib.sh
+  LSF_QUEUE=l bash /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run_simulation/calib.sh
+  bjobs
+
+既定キューは `s`、変更は `LSF_QUEUE` で指定する。投入元のROOT/GCC環境はジョブに引き継がれる。
+ログは `run_simulation/output/<工程>.<job-ID>.out` / `.err`。
+threshold scanのログは既存の条件別階層を維持する。ログ親ディレクトリは投入前に作成する。
+`.sl` の拡張子は維持し、内容をLSF用に変更した。配列用 `.sl` はsample sleepのテンプレートで、
+`LSB_JOBINDEX` の1始まりと `%J`（job ID）/ `%I`（index）に対応する。
+stdin経由の `bsub < ...sl` だけが `#BSUB` を読むため、引数付きwrapperを呼ぶdriverは全オプションを明示する。
+キューの制限・decodeをまとめて投入する例は `../run/README` を参照。
+MC用設定では `raw_path` とpedestal/MIP fit用の入出力変数は未設定のため、raw decodeやこれらの工程には別途設定が必要。
+`hl_ratio.sh` は2020年cosmic data用の旧パス・`./main` が残るlegacy入口であり、現行MCへの対応は未確認。
+以下のShift用手順は旧環境の参考として保持する。
+
 Yuzhi, CHE
 Jiaxuan, WANG
 
@@ -38,4 +61,3 @@ Result 2:
 - Record energy deposition and hit layer profile
 
 ##############################################################################
-

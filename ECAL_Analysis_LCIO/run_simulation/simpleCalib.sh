@@ -1,5 +1,7 @@
 #! /bin/bash
-source ./global_config
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "${script_dir}/global_config"
+mkdir -p "${script_dir}/output" || exit $?
 
 #------ I/O directories for each processor -------
 # Decode: Raw to ROOT
@@ -55,7 +57,7 @@ then
 
                 echo "simple Calibration ${prefix}"
                 echo " ... ... "
-                sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/simpleCalib ${decode_o}/${prefix}.root "${pede_factor}" "${simpleCalib_o}/" # > ${log_dir}/${prefix}.mip.log
+                bsub -q "${LSF_QUEUE:-s}" -n 1 -cwd "${script_dir}" -J simpleCalib -o "${script_dir}/output/simpleCalib.%J.out" -e "${script_dir}/output/simpleCalib.%J.err" bash "${script_dir}/execute.sl" "${bin_dir}/simpleCalib" "${decode_o}/${prefix}.root" "${pede_factor}" "${simpleCalib_o}/" || exit $? # > ${log_dir}/${prefix}.mip.log
                 # echo ${bin_dir}/simpleCalib ${decode_o}/${prefix}.root "${pedestal_o_2}/" "${simpleCalib_o}/" # > ${log_dir}/${prefix}.mip.log
                 echo "    Output dir ===> ${simpleCalib_o}/${prefix}.root "
 

@@ -3,39 +3,75 @@
 Yuzhi, CHE
 Jiaxuan, WANG
 
-## Manual for users in Shift
-##############################################################################
-Step 1: Decode
-- Build soft link from 'BeamData' to analysis directory:
+## KEKCC
 
-ln -s /mnt2/BeamData/ECAL/mu+/ECAL_Run182_20221026_173912.dat /mnt2/ScECAL/Result/raw/20221026
+Code: /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO
+Raw data: /gpfs/group/ilc/users/murata/data_beamtest/ECAL_data/data
+Analysis results: /gpfs/group/ilc/users/murata/data_beamtest/ECAL_data/analysed
+The active calibration factors remain in
+data_beamtest/simulation/CEPCScECAL_SML_Portable_update_new/Analysis_edit/share.
 
-- Enter the running directroy:	cd /mnt2/ScECAL/Diagnose/run
+Build with a matching ROOT/GCC environment (root-config and g++ must be available):
 
-- Open global_config: vim global_config
+  make -C /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO
 
-- Specify the 'date_tag' in file `global_config`, #e.g. mu+, e+, pi+
+Edit year, beam, date_tag and energy in run/global_config before processing.
+The existing defaults (2023, sps, e-, all) and factor filenames are unchanged.
+Paths are resolved from the configuration file, so Bash scripts can be started
+from another directory:
 
-- Run decode.sh:	sh decode.sh	
+  bash /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run/decode.sh
 
-Result 1:
+The decode output is analysed/<year>/<beam>/decode/<date_tag>/<energy>/.
+Calibration output is analysed/<year>/<beam>/calib/<date_tag>/<energy>/.
+No symlink to an old server is required. Use bash, not sh, for these scripts.
 
-- Enter the result directroy:  e.g.	cd /mnt2/ScECAL/Result/decode/mu+/
+The existing batch branches in calib/simpleCalib/SSA/track submit one LSF job
+per input file with bsub. They create output/ before submission, request one
+CPU, and use the default s queue. The existing simpleCalib energy=all branch
+still executes directly. For example, after editing global_config:
 
-- Record number of event 
-##############################################################################
-Step 2: Calibrate
+  bash /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run/calib.sh
+  LSF_QUEUE=l bash /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run/calib.sh
+  bjobs
 
-- Enter the running directroy:  cd /mnt2/ScECAL/Diagnose/run (Same Folder)
+LSF_QUEUE overrides the queue for these drivers. At KEKCC, s has a 150-minute
+CPU limit / 300-minute run limit; l has 1200 / 2400 minutes. Both have a 4 GB
+memory limit. Logs are run/output/<stage>.<job-ID>.out and .err. The MC drivers
+use run_simulation/output/; threshold scan retains its condition subdirectories.
+The submitting ROOT/GCC environment is inherited by LSF jobs.
 
-- Run calib.sh:		sh calib.sh
+decode.sh and the pedestal scripts still execute directly. To put the complete
+decode loop into one job, use the existing wrapper:
 
+  cd /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run
+  mkdir -p output
+  bsub -q s < execute_analyzer_decode.sl
 
-Result 2:
+The .sl filenames are retained, with LSF #BSUB directives. These directives are
+read by bsub only for stdin submission; drivers pass all options explicitly
+when invoking an argument-taking wrapper with bash. The array wrappers are
+templates with a sample sleep command, not analysis drivers. They now use
+LSB_JOBINDEX (1-based) and logs containing job ID and array index.
 
-- Enter the result directroy:  e.g.	cd /mnt2/ScECAL/Result/calib/mu+/
+For a single calibration without submitting a job, set a concrete energy in
+global_config, source that file in Bash, and run the executable directly:
 
-- Record energy deposition and hit layer profile
+  source /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run/global_config
+  mkdir -p "$calib_path"
+  "$bin_dir/calib" "$decode_path/<run>.root" "$pede_factor" "$inter_factor" "$mip_factor" "$calib_path/<run>.root"
 
-##############################################################################
+Replace <run> with the chosen input basename. This retains the existing factor
+files and calibration algorithm. No batch jobs are submitted by configuration.
 
+Legacy inputs:
+- pedestal_pedestal.sh uses the existing backup/seino_config (2025 KEK settings).
+  Those settings are preserved; the 2025 data are not present in this copy.
+- pedestal_nonpedestal.sh retains an existing "evho" command in energy=all;
+  this branch does not run pedestal processing. The direct decode/pedestal
+  loops also do not reliably propagate processor failures to their wrappers.
+  These existing processing issues are outside the scheduler conversion.
+- hl_ratio.sh is an old cosmic-ray helper using /mnt2/ScECAL_CR and ./main.
+  Its original input data and executable are absent; do not use it as the
+  current HG-LG intercalibration entry point without supplying those inputs.
+- shift/ is a separate 2022 workflow; see shift/README.txt for its limitations.

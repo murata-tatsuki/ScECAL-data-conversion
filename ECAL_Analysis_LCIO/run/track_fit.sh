@@ -1,6 +1,9 @@
 #！/bin/sh
 
-source ./global_config
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+cd -- "$script_dir" || exit 1
+source "${script_dir}/global_config"
+mkdir -p "$script_dir/output" || exit $?
 
 layer=8
 
@@ -28,7 +31,7 @@ for dat_name in $(ls ${input_file})
   #   continue
   # fi
 
-  sbatch -o output/test-%A.out --error="output/test-%A.err" execute_analyzer_trackFit.sl ${bin_dir}/track_fit ${input_file}/${dat_name} ${trackfile}/ ${layer}
+  bsub -q "${LSF_QUEUE:-s}" -n 1 -cwd "$script_dir" -J ecal_track_fit -o "$script_dir/output/track_fit.%J.out" -e "$script_dir/output/track_fit.%J.err" bash "$script_dir/execute_analyzer_trackFit.sl" "${bin_dir}/track_fit" "${input_file}/${dat_name}" "${trackfile}/" "$layer" || exit $?
 
 done
 

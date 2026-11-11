@@ -1,15 +1,14 @@
 #! /bin/bash
-work_dir='/megraid01/users/data_beamtest/analysis/backup/ECAL_Analysis_simulation'
-data_dir='/megraid01/users/data_beamtest/simulation/CEPCScECAL_SML_Portable_update_new/Result_MC'
-
-work_dir='/megraid01/users/data_beamtest/analysis/ECAL_Analysis_LCIO'
+work_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+data_beamtest_dir="$(cd -- "${work_dir}/../.." && pwd)"
+data_dir="${data_beamtest_dir}/simulation/CEPCScECAL_SML_Portable_update_new/Result_MC"
 
 # dat_dir='/megraid01/users/data_beamtest/ECAL_data/data'
 # dat_dir='/home/murata_t/data_beamtest/simulation/CEPCScECAL_SML_Portable_update/Result_MC/decode'
 
 bin_dir="${work_dir}/bin"
 # raw_dir="${dat_dir}"
-factor_dir="/megraid01/users/data_beamtest/simulation/CEPCScECAL_SML_Portable_update_new/Analysis/share"
+factor_dir="${data_beamtest_dir}/simulation/CEPCScECAL_SML_Portable_update_new/Analysis_edit/share"
 
 #date_tag=pi+   ######<<< CHANGE HERE into today's date ######
 #date_tag=mu+   ######<<< CHANGE HERE into today's date ######
@@ -112,7 +111,7 @@ log_dir="${data_dir}/log/${date_tag}/${energy}"
 # calib_path="${data_dir}/${year}/${beam}/calib3/${date_tag}/${energy}"
 
 
-factor_dir="/megraid01/users/data_beamtest/simulation/CEPCScECAL_SML_Portable_update_new/Analysis_edit/share"
+factor_dir="${data_beamtest_dir}/simulation/CEPCScECAL_SML_Portable_update_new/Analysis_edit/share"
 pede_factor="${factor_dir}/pedestal2023_SPS.root"
 inter_factor="${factor_dir}/all_hl_electron2023_hlratio_v3.root"
 mip_factor="${factor_dir}/all_auto_muon_v4_trackfit.root"

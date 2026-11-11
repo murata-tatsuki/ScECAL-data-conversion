@@ -5,7 +5,8 @@
 #############################################
 
 ##set up control#######
-TOP:= $(shell pwd)
+TOP:= $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+VPATH:= $(TOP)
 DIR_OBJ:= $(TOP)/obj
 DIR_BIN:= $(TOP)/bin
 DIR_SRC:= $(TOP)/src
@@ -23,7 +24,9 @@ ROOTCFLAGS    = $(shell root-config --cflags)
 ROOTLIBS      = $(shell root-config --libs) -lMinuit
 ROOTGLIBS     = $(shell root-config --glibs)
 
-CPPLIBS = $(ROOTLIBS) $(ROOTGLIBS) -ltbb
+# ROOT resolves its own TBB dependency; keep the compiler runtime consistent.
+CXX_RUNTIME_DIR = $(dir $(shell env -u LIBRARY_PATH $(CXX) -print-file-name=libstdc++.so.6))
+CPPLIBS = $(ROOTLIBS) $(ROOTGLIBS) -L$(CXX_RUNTIME_DIR) -Wl,-rpath,$(CXX_RUNTIME_DIR)
 DIR_INCLUDE+=$(ROOTCFLAGS)
 
 # #set up compilers#
@@ -32,6 +35,11 @@ CPPFLAGS = -g -Wall -I$(DIR_INCLUDE)
 
 ####### Make Execuatbles#######
 all: decode pedestal pedestal_pedestal calib track_fit track_fit_ track_fit_3d mip hl_ratio ssa calib_ssa simpleCalib
+
+decode pedestal pedestal_pedestal calib track_fit track_fit_ track_fit_3d mip hl_ratio ssa calib_ssa simpleCalib: | $(DIR_BIN)
+
+$(DIR_OBJ) $(DIR_BIN):
+	mkdir -p $@
 
 decode: decode.cxx $(OBJ) #$(DIR_BIN)
 	$(CXX) $(CPPFLAGS) $< $(OBJ) $(CPPLIBS)  -o $(DIR_BIN)/$(notdir $@)
@@ -70,7 +78,7 @@ simpleCalib: simpleCalib.cxx  $(OBJ) #$(DIR_BIN)
 	$(CXX) $(CPPFLAGS) $< $(OBJ) $(CPPLIBS)  -o $(DIR_BIN)/$(notdir $@)
 
 #################################
-$(DIR_OBJ)/%.o:$(DIR_SRC)/%.cxx  
+$(DIR_OBJ)/%.o:$(DIR_SRC)/%.cxx | $(DIR_OBJ)
 	$(CXX) $(CPPFLAGS)  -c $(DIR_SRC)/$(notdir $<)  -o $(DIR_OBJ)/$(notdir $@)
 
 #	$(AR) r $(DIR_SRC)/$(notdir $@) $(DIR_OBJ)/$(notdir $@)
@@ -79,4 +87,4 @@ $(DIR_OBJ)/%.o:$(DIR_SRC)/%.cxx
 
 .PHONY:clean
 clean: 
-	rm -f $(DIR_OBJ)/*.o rm -f $(DIR_BIN)/*
+	rm -f $(DIR_OBJ)/*.o $(DIR_BIN)/*

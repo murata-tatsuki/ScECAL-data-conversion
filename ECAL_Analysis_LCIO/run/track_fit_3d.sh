@@ -1,5 +1,8 @@
 #！/bin/sh
-source ./global_config
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+cd -- "$script_dir" || exit 1
+source "${script_dir}/global_config"
+mkdir -p "$script_dir/output" || exit $?
 
 #work_dir='/mnt2/debug/cheyuzhi/ecal_ana'
 #data_dir='/mnt2/debug/cheyuzhi/data'
@@ -40,7 +43,7 @@ do
   echo "Track Fitting with SSA ${prefix}"
   # echo " ... ... "
   # ${bin_dir}/track_fit_3d ${stripsplit_o}/${dat_name} "${trackFit_o}/" ${layer}
-  sbatch -o output/test-%A.out --error="output/test-%A.err" execute.sl ${bin_dir}/track_fit_3d ${stripsplit_o}/${dat_name} "${trackFit_o}/" ${layer}
+  bsub -q "${LSF_QUEUE:-s}" -n 1 -cwd "$script_dir" -J ecal_track_fit_3d -o "$script_dir/output/track_fit_3d.%J.out" -e "$script_dir/output/track_fit_3d.%J.err" bash "$script_dir/execute.sl" "${bin_dir}/track_fit_3d" "${stripsplit_o}/${dat_name}" "${trackFit_o}/" "$layer" || exit $?
   # echo "    Output dir ===> ${trackFit_o}/${prefix}.root "
 
   # echo "=============================="

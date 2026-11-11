@@ -1,21 +1,16 @@
 #!/bin/bash
-###############################################################################
-# A sample SLURM script to run analyzer on 1 node
-#
-#  usage:
-#        (0) Edit this script
-#        (1) Submit the job.
-#            % cd $MEG2SYS/analyzer
-#            % sbatch example/analyzer.sl
-#            % sbatch -o test-%A_%a.out --error="test-%A_%a.err" jobThrowing.sl
-#
-###############################################################################
+# KEKCC LSF job wrapper.
+# Submit with arguments via the corresponding .sh driver (see README).
 
-#SBATCH --partition=all
-#SBATCH --ntasks=1       
-#SBATCH --job-name=analyzer   
-#SBATCH --output="output/analyzer%A.out"
-#SBATCH --error="ioutput/analyzer%A.err"
+#BSUB -q s
+#BSUB -n 1
+#BSUB -J "ecal_mc_calib"
+#BSUB -cwd /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run_simulation
+#BSUB -o /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run_simulation/output/calib.%J.out
+#BSUB -e /gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run_simulation/output/calib.%J.err
+
+script_dir="/gpfs/group/ilc/users/murata/data_beamtest/analysis/ECAL_Analysis_LCIO/run_simulation"
+cd -- "$script_dir" || exit 1
 
 MY_HOST=`hostname`
 MY_DATE=`date`
@@ -40,7 +35,7 @@ echo "================================================================"
 #./meganalyzer -i example/bartenderMode.xml -r 1 -b
 # bash calib.sh
 
-source ./global_config
+source "${script_dir}/global_config" || exit $?
 
 file_name=$1
 pede_factor=$2
@@ -51,14 +46,15 @@ calib_o=$5
 echo "Calibration ${5}"
 echo " ... ... "
 #${bin_dir}/calib ${decode_o}/${file_name} ${pedestal_o_2}/${file_name} ${inter_factor} ${mip_factor} ${calib_o}/${prefix}.root #> ${log_dir}/${prefix}.log
-${bin_dir}/calib ${1} ${2} ${3} ${4} ${5} #> ${log_dir}/${prefix}.log
+"${bin_dir}/calib" "$1" "$2" "$3" "$4" "$5"
+RET=$?
 echo "    Output dir ===> ${5} "
 
 echo "=============================="
 
 
-RET=$?
 echo "Exit status: $RET"
 echo "================================================================"
 END_DATE=`date`
 echo "End of run is $END_DATE"
+exit "$RET"

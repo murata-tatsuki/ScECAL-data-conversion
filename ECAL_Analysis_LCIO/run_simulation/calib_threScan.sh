@@ -1,5 +1,7 @@
 #! /bin/bash
-source ./global_config
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "${script_dir}/global_config"
+mkdir -p "${script_dir}/output" || exit $?
 
 #------ I/O directories for each processor -------
 # Decode: Raw to ROOT
@@ -50,7 +52,7 @@ then
         continue
       fi
     
-    sbatch -o output/test-%A_%a.out --error="output/test-%A_%a.err" execute_analyzer_calib.sl ${decode_o}/${file_name} ${pede_factor} ${inter_factor} ${mip_factor} ${calib_o}/${prefix}.root
+    bsub -q "${LSF_QUEUE:-s}" -n 1 -cwd "${script_dir}" -J calib_threScan -o "${script_dir}/output/calib_threScan.%J.out" -e "${script_dir}/output/calib_threScan.%J.err" bash "${script_dir}/execute_analyzer_calib.sl" "${decode_o}/${file_name}" "${pede_factor}" "${inter_factor}" "${mip_factor}" "${calib_o}/${prefix}.root" || exit $?
 
     # echo "Calibration ${prefix}"
     # echo " ... ... "
@@ -89,12 +91,12 @@ then
 
     mkdir -p ${calib_ou}
 
-    jobOut=output/scan/${date_tag}/${ene/%?/}/out
-    jobErr=output/scan/${date_tag}/${ene/%?/}/err
+    jobOut=${script_dir}/output/scan/${date_tag}/${ene/%?/}/out
+    jobErr=${script_dir}/output/scan/${date_tag}/${ene/%?/}/err
     # rm -r ${jobOut}
     # rm -r ${jobErr}
-    mkdir -p ${jobOut}
-    mkdir -p ${jobErr}
+    mkdir -p "${jobOut}" || exit $?
+    mkdir -p "${jobErr}" || exit $?
 
     for rootfile in $(ls ${decode_ou}/*)
     do
@@ -107,7 +109,7 @@ then
         continue
       fi
 
-      sbatch -o ${jobOut}/${prefix}-%A_%a.out --error="${jobErr}/${prefix}-%A_%a.err" execute_analyzer_calib.sl ${decode_ou}/${file_name} ${pede_factor} ${inter_factor} ${mip_factor} ${calib_ou}/${prefix}.root
+      bsub -q "${LSF_QUEUE:-s}" -n 1 -cwd "${script_dir}" -J calib_threScan -o "${jobOut}/${prefix}.%J.out" -e "${jobErr}/${prefix}.%J.err" bash "${script_dir}/execute_analyzer_calib.sl" "${decode_ou}/${file_name}" "${pede_factor}" "${inter_factor}" "${mip_factor}" "${calib_ou}/${prefix}.root" || exit $?
 
     done
   #   echo "Calibration ${prefix}"
